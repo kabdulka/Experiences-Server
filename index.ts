@@ -1,8 +1,8 @@
 import express, { Express, Request, Response } from "express";
 import dotenv from "dotenv";
-import bodyParser from "body-parser";
 import cors from "cors";
 import mongoose from "mongoose";
+import postRoutes from './routes/posts';
 
 dotenv.config();
 
@@ -22,6 +22,8 @@ mongoose.connect(CONNECTION_URL)
   // .catch((error) => console.log(error.message));
 
 mongoose.connection.on(`error`, (error: Error) => console.log(error));
+
+app.use('/posts', postRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Express + TypeScript Server");
