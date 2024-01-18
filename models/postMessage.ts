@@ -5,7 +5,7 @@ interface User {
     message: string;
     user: string;
     tags: string[];
-    selectedFile: string
+    file: String
     likeCount: number
     createdAt: Date
 }
@@ -16,7 +16,7 @@ const postSchema = new Schema<User>({
     message: String,
     user: String,
     tags: [String],
-    selectedFile: String,
+    file: String,
     likeCount: {
         type: Number,
         default: 0
