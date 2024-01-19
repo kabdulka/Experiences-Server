@@ -1,5 +1,5 @@
 import express from "express";
-import { getPosts, createPost } from "../controllers/posts";
+import { getPosts, createPost, updatePost, deletePost } from "../controllers/posts";
 
 const router = express.Router();
 
@@ -9,4 +9,9 @@ router.get('/', getPosts);
 //POST
 router.post('/', createPost)
 
+//UPDATE
+router.patch('/:id', updatePost);
+
+//DELETE
+router.delete('/:id', deletePost);
 export default router;
