@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 
-interface User {
+interface Post {
     title: string;
     message: string;
     user: string;
@@ -11,7 +11,7 @@ interface User {
 }
 
 // create mongoose schema
-const postSchema = new Schema<User>({
+const postSchema = new Schema<Post>({
     title: String,
     message: String,
     user: String,
