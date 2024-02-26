@@ -4,6 +4,10 @@ import multer from "multer"
 import path from "path";
 import mongoose from "mongoose";
 
+interface AuthRequest extends Request {
+    userId?: string; // Add the userId property
+}
+
 // const storage = multer.memoryStorage();
 const storage = multer.diskStorage({
     filename: (req, file, cb) => {
@@ -119,18 +123,35 @@ const deletePost = async (req: Request, res: Response) => {
     }
 }
 
-const likePost = async (req: Request, res: Response) => {
+const likePost = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
 
+    // check if user is authenticated
+    if (!req.userId) {
+        return res.json({ message: "User is not authenticated" });
+    }
+
     try {
+        // check if the post the user wants to like is there
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).send("No post with that Id");
         }
 
         const post = await PostMessage.findById(id);
+
+        const index = post.likes.findIndex((id) => id === String(req.userId));
+
+        if (index === -1) {
+            // like the post
+            post.likes.push(req.userId)
+        } else {
+            // delete like (dislike)
+            post.likes.filter((id) => id === String(req.userId));
+        }
+
         const updatedPost = await PostMessage.findByIdAndUpdate(
             id,
-            { likeCount: post.likeCount + 1 },
+            post,
             { new: true }
         );
         res.json(updatedPost);

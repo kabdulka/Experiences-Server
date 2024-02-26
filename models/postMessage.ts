@@ -1,12 +1,19 @@
 import mongoose, { Schema } from "mongoose";
 
+type likesType = {
+    type: string[],
+    default: string[]
+}
+
 interface Post {
     title: string;
     message: string;
     user: string;
     tags: string[];
     file: String
-    likeCount: number
+    // likes: likesType
+    likes: String[]
+    // likeCount: number
     createdAt: Date
 }
 
@@ -17,9 +24,9 @@ const postSchema = new Schema<Post>({
     user: String,
     tags: [String],
     file: String,
-    likeCount: {
-        type: Number,
-        default: 0
+    likes: {
+        type: [String],
+        default: []
     },
     createdAt: {
         type: Date,
