@@ -31,7 +31,7 @@ const getPosts = async (req: Request , res: Response) => {
     }
 }
 
-const createPost = async (req: Request, res: Response) => {
+const createPost = async (req: AuthRequest, res: Response) => {
     try {
         upload(req, res, async (err: any) => {
             if (err) {
@@ -39,16 +39,17 @@ const createPost = async (req: Request, res: Response) => {
                 return res.status(500).send(err.message);
             }
 
-            const { title, message, user, tags, file } = req.body;
-
-            if ( !title || !user || 
-                !message || !file 
-                || !tags) {
+            // const { title, message, user, tags, file } = req.body;
+            const post = req.body;
+            console.log(post)
+            if ( !post.title || 
+                !post.message || !post.file 
+                || !post.tags) {
                 console.log("here")
                 return res.status(400).json({error: `Missing fields` });
             }
-            const newPost = new PostMessage({ title, message, user, tags, file });
-
+            const newPost = new PostMessage({ ...post, user: req.userId, createdAt: new Date().toISOString()});
+            console.log("newPost", newPost);
             await newPost.save();
             res.status(201).json(newPost);
         });
@@ -81,7 +82,7 @@ const updatePost = async  (req: Request, res: Response) => {
     //     return res.status(400).json({error: `Missing fields: ${missingFields.join(', ')}`});
     // }
     
-    if ( !updatedPostData.title || !updatedPostData.user || 
+    if ( !updatedPostData.title || 
         !updatedPostData.message || !updatedPostData.file 
         || !updatedPostData.tags) {
         console.log("here")
@@ -140,13 +141,18 @@ const likePost = async (req: AuthRequest, res: Response) => {
         const post = await PostMessage.findById(id);
 
         const index = post.likes.findIndex((id) => id === String(req.userId));
-
+        console.log("index", index)
         if (index === -1) {
             // like the post
             post.likes.push(req.userId)
         } else {
             // delete like (dislike)
-            post.likes.filter((id) => id === String(req.userId));
+            post.likes = post.likes.filter((id) => 
+               
+                id !== (req.userId)
+            );
+            // console.log("newLikes", newLikes)
+            console.log(post.likes);
         }
 
         const updatedPost = await PostMessage.findByIdAndUpdate(

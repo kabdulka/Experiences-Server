@@ -8,6 +8,7 @@ type likesType = {
 interface Post {
     title: string;
     message: string;
+    name: String,  // name of person logged in
     user: string;
     tags: string[];
     file: String
@@ -22,6 +23,7 @@ const postSchema = new Schema<Post>({
     title: String,
     message: String,
     user: String,
+    name: String,
     tags: [String],
     file: String,
     likes: {
