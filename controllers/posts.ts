@@ -17,16 +17,41 @@ const storage = multer.diskStorage({
 // const upload = multer({ storage: storage });
 const upload = multer({ storage: storage }).single('file');
 
+// retrieves posts by page
 const getPosts = async (req: Request , res: Response) => {
 
+    const { page } = req.query;
+    console.log("page", page)
     try {
+        const LIMIT = 8;
+        const startIndex = (Number(page) - 1) * 8;  // start index of a post on a specific page or start index of every page
+        const total = await PostMessage.countDocuments({}) // how many posts do we have
+        console.log("total", total)
         // const result = await PostMessage.deleteMany({});
         // retrieve all messages/posts
-        const posts = await PostMessage.find();
-        // console.log(posts);
+        const posts = await PostMessage.find().sort({_id: -1}).limit(LIMIT).skip(startIndex); // get newest post first
+        // _id: -1 returns newest post first
+        // .limit() limits the number of posts returned
+        // skip() skips previous pages
 
-        res.status(200).json(posts);
+        console.log(posts)
+        res.status(200).json({posts: posts, currentPage: Number(page), numberOfPages: Math.ceil(total / LIMIT)});
     } catch (error) {  
+        res.status(404).json({ message: error.message });
+    }
+}
+
+const getPostsBySearch = async (req: Request, res: Response) => {
+    try {
+        const { searchQuery, tags } = req.query;
+        console.log(searchQuery, tags);
+        // 
+        const title = new RegExp(searchQuery?.toString(), "i");
+        const posts = await PostMessage.find({$or: [ {title}, {tags: {$in: (tags as string).split(",")}} ]});
+        console.log(tags)
+        res.json({data: posts});
+
+    } catch (error) {
         res.status(404).json({ message: error.message });
     }
 }
@@ -173,5 +198,6 @@ export {
     updatePost,
     deletePost,
     likePost,
+    getPostsBySearch,
     // upload,
 }
