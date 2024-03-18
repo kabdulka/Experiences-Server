@@ -21,12 +21,12 @@ const upload = multer({ storage: storage }).single('file');
 const getPosts = async (req: Request , res: Response) => {
 
     const { page } = req.query;
-    console.log("page", page)
+    // console.log("page", page)
     try {
         const LIMIT = 8;
         const startIndex = (Number(page) - 1) * 8;  // start index of a post on a specific page or start index of every page
         const total = await PostMessage.countDocuments({}) // how many posts do we have
-        console.log("total", total)
+        // console.log("total", total)
         // const result = await PostMessage.deleteMany({});
         // retrieve all messages/posts
         const posts = await PostMessage.find().sort({_id: -1}).limit(LIMIT).skip(startIndex); // get newest post first
@@ -34,22 +34,36 @@ const getPosts = async (req: Request , res: Response) => {
         // .limit() limits the number of posts returned
         // skip() skips previous pages
 
-        console.log(posts)
+        // console.log(posts)
         res.status(200).json({posts: posts, currentPage: Number(page), numberOfPages: Math.ceil(total / LIMIT)});
     } catch (error) {  
         res.status(404).json({ message: error.message });
     }
 }
 
+const getPost = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    // console.log("inside get post")
+    // console.log(id)
+    try {
+        const post = await PostMessage.findById(id);
+        // console.log(post);
+        // return to the frontend
+        res.status(200).json(post);
+    } catch (error) {
+        res.status(404).json({ message: error.message });
+    }
+} 
+
 const getPostsBySearch = async (req: Request, res: Response) => {
     try {
         const { searchQuery, tags } = req.query;
-        console.log(searchQuery, tags);
-        // 
+        console.log(searchQuery, "Tags:",tags);
         const title = new RegExp(searchQuery?.toString(), "i");
-        const posts = await PostMessage.find({$or: [ {title}, {tags: {$in: (tags as string).split(",")}} ]});
-        console.log(tags)
-        res.json({data: posts});
+        let posts = await PostMessage.find({$or: [ {title}, {tags: {$in: (tags as string).split(",")}} ]});
+        console.log(posts)
+        res.json({posts: posts});
+       
 
     } catch (error) {
         res.status(404).json({ message: error.message });
@@ -70,11 +84,9 @@ const createPost = async (req: AuthRequest, res: Response) => {
             if ( !post.title || 
                 !post.message || !post.file 
                 || !post.tags) {
-                console.log("here")
                 return res.status(400).json({error: `Missing fields` });
             }
             const newPost = new PostMessage({ ...post, user: req.userId, createdAt: new Date().toISOString()});
-            console.log("newPost", newPost);
             await newPost.save();
             res.status(201).json(newPost);
         });
@@ -87,25 +99,6 @@ const createPost = async (req: AuthRequest, res: Response) => {
 const updatePost = async  (req: Request, res: Response) => {
     const { id: _id } = req.params;
     const updatedPostData = req.body
-    // const {title, user, message, file, tags} = req.body
-    // Error handling code
-    // const requiredFields = Object.keys(updatedPostData).map(key => updatedPostData[key]);
-    // or 
-    // const requiredFields = Object.entries(updatedPostData).map(([key, value]) => value);
-
-    // const missingFields = [];
-
-    // requiredFields.forEach((field) => {
-    //     if (!(field in updatedPostData)) {
-    //         console.log(field in updatedPostData);
-    //         missingFields.push(field);
-    //     }
-    // })
-    // // at least 1 field is missing from req.body
-    // if (missingFields.length > 0) {
-    //     console.log(missingFields)
-    //     return res.status(400).json({error: `Missing fields: ${missingFields.join(', ')}`});
-    // }
     
     if ( !updatedPostData.title || 
         !updatedPostData.message || !updatedPostData.file 
@@ -123,12 +116,13 @@ const updatePost = async  (req: Request, res: Response) => {
         const updatedPost = await PostMessage.findByIdAndUpdate (
             _id,
             // spread update data and include the ID. Fixed previous bug when id was not included
-            {...updatedPostData, _id},
+            { ...updatedPostData, _id },
             // ensure updated document is returned, and validators are run
-            {new: true, runValidators: true}
+            { new: true, runValidators: true }
         )
-
-        res.status(202).json(updatedPost)
+        const allPosts = await PostMessage.find();
+        console.log(allPosts.length)
+        res.status(202).json(allPosts)
 
     } catch (error) {
         console.log(error)
@@ -137,7 +131,7 @@ const updatePost = async  (req: Request, res: Response) => {
 
 const deletePost = async (req: Request, res: Response) => {
     const { id } = req.params;
-
+    console.log("Inaide delete")
     try {
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).send("No post with that Id");
@@ -150,13 +144,13 @@ const deletePost = async (req: Request, res: Response) => {
 }
 
 const likePost = async (req: AuthRequest, res: Response) => {
+    console.log("like post")
     const { id } = req.params;
 
     // check if user is authenticated
     if (!req.userId) {
         return res.json({ message: "User is not authenticated" });
     }
-
     try {
         // check if the post the user wants to like is there
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -166,25 +160,27 @@ const likePost = async (req: AuthRequest, res: Response) => {
         const post = await PostMessage.findById(id);
 
         const index = post.likes.findIndex((id) => id === String(req.userId));
-        console.log("index", index)
+        // console.log("index", index)
         if (index === -1) {
             // like the post
             post.likes.push(req.userId)
+            console.log("Likes", post.likes.length);
         } else {
             // delete like (dislike)
-            post.likes = post.likes.filter((id) => 
-               
-                id !== (req.userId)
-            );
+            console.log("Are we here?")
+            post.likes = post.likes.filter((id) => id !== (req.userId));
+            console.log("Likes", post.likes.length);
             // console.log("newLikes", newLikes)
-            console.log(post.likes);
         }
+        
+        console.log("Likes", post.likes);
 
         const updatedPost = await PostMessage.findByIdAndUpdate(
             id,
             post,
             { new: true }
         );
+        console.log("new likes", updatePost)
         res.json(updatedPost);
 
     } catch (error) {
@@ -194,6 +190,7 @@ const likePost = async (req: AuthRequest, res: Response) => {
 
 export {
     getPosts,
+    getPost,
     createPost,
     updatePost,
     deletePost,
